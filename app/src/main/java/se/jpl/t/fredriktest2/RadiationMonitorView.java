@@ -1,6 +1,7 @@
 package se.jpl.t.fredriktest2;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,6 +21,9 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -100,6 +104,9 @@ public class RadiationMonitorView extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        final SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        final SharedPreferences.Editor editor = preferences.edit();
+
         String clientId = MqttClient.generateClientId();
         final MqttAndroidClient client =
                 new MqttAndroidClient(this.getApplicationContext(), "tcp://10.0.2.2:1883",
@@ -115,6 +122,9 @@ public class RadiationMonitorView extends AppCompatActivity {
                 TextView textView = (TextView) findViewById(R.id.textViewAirPressure);
                 TextView textViewTemperatureOutside = (TextView) findViewById(R.id.textViewTemperatureOutside);
                 TextView textViewPowerUsage = (TextView) findViewById(R.id.textViewPowerUsage);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-DD-mm");
+                String currentDate = sdf.format(new Date());
+                Long kwh = preferences.getLong("KWH-" + currentDate, 0);
 
                 JSONObject jObject = new JSONObject(message.toString());
                 if (jObject.getString("id").equalsIgnoreCase("6C2A0000")) {
@@ -124,8 +134,13 @@ public class RadiationMonitorView extends AppCompatActivity {
                     textViewTemperatureOutside.setText(jObject.getString("svalue1") + "°");
                 }
                 if (jObject.getString("id").equalsIgnoreCase("497")) {
+                    long usage = Long.parseLong(jObject.getString("svalue2"));
+                    if (kwh == 0) {
+                        editor.putLong("KWH-" + currentDate, usage);
+                        kwh = usage;
+                    }
                     Log.d(TAG, message.toString());
-                    textViewPowerUsage.setText(jObject.getString("svalue2") + " kWh");
+                    textViewPowerUsage.setText(usage - kwh + " kWh");
                 }
 
                 Log.d(TAG, "Sensor " + jObject.getString("name") + " " + jObject.getString("id"));
