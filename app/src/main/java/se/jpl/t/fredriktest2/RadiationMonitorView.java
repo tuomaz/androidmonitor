@@ -2,6 +2,7 @@ package se.jpl.t.fredriktest2;
 
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +12,10 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -24,6 +29,8 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -101,6 +108,11 @@ public class RadiationMonitorView extends AppCompatActivity {
             return false;
         }
     };
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +123,25 @@ public class RadiationMonitorView extends AppCompatActivity {
         final MqttAndroidClient client =
                 new MqttAndroidClient(this.getApplicationContext(), "tcp://10.0.2.2:1883",
                         clientId);
+        Timer connectionWatchDog = new Timer();
+        connectionWatchDog.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Checking connection.");
+                if (!client.isConnected()) {
+                    try {
+                        Log.d(TAG, "Trying to reconnect.");
+                        client.connect();
+                        Log.d(TAG, "Successfully reconnected.");
+                    } catch (MqttException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Log.d(TAG, "Still connected.");
+                }
+            }
+        }, 60000, 60000);
+
         client.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
@@ -122,6 +153,8 @@ public class RadiationMonitorView extends AppCompatActivity {
                 TextView textView = (TextView) findViewById(R.id.textViewAirPressure);
                 TextView textViewTemperatureOutside = (TextView) findViewById(R.id.textViewTemperatureOutside);
                 TextView textViewPowerUsage = (TextView) findViewById(R.id.textViewPowerUsage);
+                TextView textViewTemperatureInside = (TextView) findViewById(R.id.textViewTemperatureInside);
+
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-DD-mm");
                 String currentDate = sdf.format(new Date());
                 Long kwh = preferences.getLong("KWH-" + currentDate, 0);
@@ -133,18 +166,26 @@ public class RadiationMonitorView extends AppCompatActivity {
                 if (jObject.getString("id").equalsIgnoreCase("3585")) {
                     textViewTemperatureOutside.setText(jObject.getString("svalue1") + "°");
                 }
+                if (jObject.getString("id").equalsIgnoreCase("5749")) {
+                    textViewTemperatureInside.setText(jObject.getString("svalue1") + "°");
+                }
+
                 if (jObject.getString("id").equalsIgnoreCase("497")) {
-                    long usage = Long.parseLong(jObject.getString("svalue2"));
+                    //String usage = jObject.getString("svalue2");
+                    long usage = Long.parseLong(jObject.getString("svalue1"));
+                    /*
                     if (kwh == 0) {
                         editor.putLong("KWH-" + currentDate, usage);
                         kwh = usage;
                     }
                     Log.d(TAG, message.toString());
                     textViewPowerUsage.setText(usage - kwh + " kWh");
+                    */
+                    textViewPowerUsage.setText(usage + " kWh");
+                    Log.d(TAG, message.toString());
                 }
 
                 Log.d(TAG, "Sensor " + jObject.getString("name") + " " + jObject.getString("id"));
-
             }
 
             @Override
@@ -176,7 +217,8 @@ public class RadiationMonitorView extends AppCompatActivity {
                                 @Override
                                 public void onFailure(IMqttToken asyncActionToken,
                                                       Throwable exception) {
-                                    Log.d(TAG, "Subscription failed.");                                }
+                                    Log.d(TAG, "Subscription failed.");
+                                }
                             });
                         } catch (MqttException e) {
                             e.printStackTrace();
@@ -203,7 +245,6 @@ public class RadiationMonitorView extends AppCompatActivity {
         } else {
             Log.d(TAG, "Connection failed 2.");
         }
-
 
 
 /*
@@ -254,6 +295,9 @@ public class RadiationMonitorView extends AppCompatActivity {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client2 = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
@@ -307,5 +351,45 @@ public class RadiationMonitorView extends AppCompatActivity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client2.connect();
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "RadiationMonitorView Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://se.jpl.t.fredriktest2/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client2, viewAction);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "RadiationMonitorView Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://se.jpl.t.fredriktest2/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client2, viewAction);
+        client2.disconnect();
     }
 }

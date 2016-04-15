@@ -47,7 +47,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Large Text"
+            android:text="KWh"
             android:id="@+id/textViewPowerUsage"
             android:layout_gravity="right|top"
             android:textSize="35sp"
@@ -57,15 +57,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Large Text"
+            android:textSize="35sp"
+            android:text="Inne"
             android:id="@+id/textViewTemperatureInside"
-            android:layout_gravity="left|bottom" />
+            android:layout_gravity="left|bottom"
+            android:textColor="#ffffff"
+            />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Large Text"
+            android:text="Ute"
             android:id="@+id/textViewTemperatureOutside"
             android:layout_gravity="right|bottom"
             android:textSize="35sp"
@@ -84,12 +87,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Large Text"
+            android:text="Lufttryck"
             android:id="@+id/textViewAirPressure"
             android:layout_gravity="left|top"
             android:textSize="35sp"
             android:textColor="#ffffff" />
-
     </FrameLayout>
-
 </FrameLayout>
